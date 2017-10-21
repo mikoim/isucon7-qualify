@@ -93,6 +93,7 @@ type User struct {
 	DisplayName string    `json:"display_name" db:"display_name"`
 	AvatarIcon  string    `json:"avatar_icon" db:"avatar_icon"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
+	PlainPassword string  `json:"-" db:"plain_password"`
 }
 
 func getUser(userID int64) (*User, error) {
@@ -215,13 +216,13 @@ func randomString(n int) string {
 }
 
 func register(name, password string) (int64, error) {
-	salt := randomString(20)
-	digest := fmt.Sprintf("%x", sha1.Sum([]byte(salt+password)))
+	//salt := randomString(20)
+	//digest := fmt.Sprintf("%x", sha1.Sum([]byte(salt+password)))
 
 	res, err := db.Exec(
-		"INSERT INTO user (name, salt, password, display_name, avatar_icon, created_at)"+
-			" VALUES (?, ?, ?, ?, ?, NOW())",
-		name, salt, digest, name, "default.png")
+		"INSERT INTO user (name, salt, password, display_name, avatar_icon, created_at, plain_password)"+
+			" VALUES (?, ?, ?, ?, ?, NOW(), ?)",
+		name, "a", "a", name, "default.png", password)
 	if err != nil {
 		return 0, err
 	}
@@ -343,11 +344,18 @@ func postLogin(c echo.Context) error {
 		return err
 	}
 
-	digest := fmt.Sprintf("%x", sha1.Sum([]byte(user.Salt+pw)))
-	if digest != user.Password {
-		return echo.ErrForbidden
+	if pw != user.PlainPassword {
+		digest := fmt.Sprintf("%x", sha1.Sum([]byte(user.Salt+pw)))
+		if digest != user.Password {
+			return echo.ErrForbidden
+		} else {
+			_, err = db.Exec("UPDATE user SET plain_password = ? WHERE id = ?", pw, user.ID)
+		}
 	}
+
 	sessSetUserID(c, user.ID)
+	//println(name + " " + pw)
+	//todo delete
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -745,7 +753,6 @@ func postProfile(c echo.Context) error {
 		}
 */
 
-		println(avatarName)
 		if _, err = os.Stat(avatarBaseDir + "/" + avatarName); os.IsNotExist(err) {
 			println(avatarName + ": write")
 			file, err := os.Create(avatarBaseDir + "/" + avatarName)
@@ -830,7 +837,7 @@ func main() {
 	e.GET("/", getIndex)
 	e.GET("/register", getRegister)
 	e.POST("/register", postRegister)
-	 e.GET("/login", getLogin)
+	e.GET("/login", getLogin)
 	e.POST("/login", postLogin)
 	e.GET("/logout", getLogout)
 
