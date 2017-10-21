@@ -714,7 +714,7 @@ func dumpIcons(c echo.Context) error {
 	rows, err := db.Query("SELECT name, data FROM image")
 	for rows.Next() {
 		rows.Scan(&name, &data)
-		file, _ = os.Open(name)
+		file, _ := os.Open("/tmp/images/" + name)
 		file.Write(data)
 	}
 	if err == sql.ErrNoRows {
@@ -723,7 +723,8 @@ func dumpIcons(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.Write(http.StatusOK, mime, data)
+	_, err = c.Response().Writer.Write([]byte("Success"))
+	return err
 }
 
 func tAdd(a, b int64) int64 {
