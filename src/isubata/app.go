@@ -712,10 +712,16 @@ func dumpIcons(c echo.Context) error {
 	var name string
 	var data []byte
 	rows, err := db.Query("SELECT name, data FROM image")
+	if err != nil {
+		print(err)
+		return echo.ErrNotFound
+	}
 	for rows.Next() {
 		rows.Scan(&name, &data)
 		file, _ := os.Open("/tmp/images/" + name)
+		print(name)
 		file.Write(data)
+		file.Close()
 	}
 	if err == sql.ErrNoRows {
 		return echo.ErrNotFound
