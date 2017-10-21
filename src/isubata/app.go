@@ -713,18 +713,21 @@ func dumpIcons(c echo.Context) error {
 	var data []byte
 	rows, err := db.Query("SELECT name, data FROM image")
 	if err != nil {
-		print(err)
-		return echo.ErrNotFound
+		println(err)
+		return err
 	}
+	defer rows.Close()
 	for rows.Next() {
-		rows.Scan(&name, &data)
-		file, _ := os.Open("/tmp/images/" + name)
-		print(name)
+		if err := rows.Scan(&name, &data); err != nil {
+			println(err)
+		}
+		println("dumping " + "/tmp/images/" + name)
+		file, err := os.Create("/tmp/images/" + name)
+		if err != nil {
+			println("failed to open: " + "/tmp/images/" + name)
+		}
 		file.Write(data)
 		file.Close()
-	}
-	if err == sql.ErrNoRows {
-		return echo.ErrNotFound
 	}
 	if err != nil {
 		return err
