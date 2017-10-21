@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -670,12 +671,19 @@ func postProfile(c echo.Context) error {
 			return err
 		}
 */
-		file, err := os.Create(avatarBaseDir + "/" + avatarName)
-		defer file.Close()
-		if err != nil {
-			println(err)
+
+		println(avatarName)
+		if _, err = os.Stat(avatarBaseDir + "/" + avatarName); os.IsNotExist(err) {
+			println(avatarName + ": write")
+			file, err := os.Create(avatarBaseDir + "/" + avatarName)
+			if err != nil {
+				println(err)
+			}
+			file.Write(avatarData);
+			file.Close()
+		} else {
+			println(avatarName + ": skip")
 		}
-		file.Write(avatarData);
 		_, err = db.Exec("UPDATE user SET avatar_icon = ? WHERE id = ?", avatarName, self.ID)
 		if err != nil {
 			return err
@@ -692,6 +700,7 @@ func postProfile(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+/*
 func getIcon(c echo.Context) error {
 	var name string
 	var data []byte
@@ -717,6 +726,7 @@ func getIcon(c echo.Context) error {
 	}
 	return c.Blob(http.StatusOK, mime, data)
 }
+*/
 
 func tAdd(a, b int64) int64 {
 	return a + b
@@ -740,16 +750,16 @@ func main() {
 		templates: template.Must(template.New("").Funcs(funcs).ParseGlob("views/*.html")),
 	}
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secretonymoris"))))
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "request:\"${method} ${uri}\" status:${status} latency:${latency} (${latency_human}) bytes:${bytes_out}\n",
-	}))
+	//e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	//	Format: "request:\"${method} ${uri}\" status:${status} latency:${latency} (${latency_human}) bytes:${bytes_out}\n",
+	//}))
 	e.Use(middleware.Static("../public"))
 
 	e.GET("/initialize", getInitialize)
 	e.GET("/", getIndex)
 	e.GET("/register", getRegister)
 	e.POST("/register", postRegister)
-	e.GET("/login", getLogin)
+	 e.GET("/login", getLogin)
 	e.POST("/login", postLogin)
 	e.GET("/logout", getLogout)
 
@@ -764,7 +774,16 @@ func main() {
 
 	e.GET("add_channel", getAddChannel)
 	e.POST("add_channel", postAddChannel)
-	e.GET("/icons/:file_name", getIcon)
+	//e.GET("/icons/:file_name", getIcon)
 
-	e.Start(":5000")
+	os.Remove("/tmp/echo.sock")
+	l, err := net.Listen("unix", "/tmp/echo.sock")
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	os.Chmod("/tmp/echo.sock", 0777)
+	e.Listener = l
+	e.Logger.Fatal(e.Start(""))
+
+	/* e.Start(":5000") */
 }
