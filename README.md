@@ -24,6 +24,7 @@ ISUCON7 qualify repo: 人は何故生きるのか
 
 - Percona Server 5.7へ移行
   - 事前のベンチマークで若干のパフォーマンス向上が見られたため
+- index
 - タレ
 
 ### Linux
