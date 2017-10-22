@@ -9,6 +9,8 @@ ISUCON7 qualify repo: 人は何故生きるのか
   - dbをストレージサーバとしてNFSで共有
 - N+1をいくつか修正
 - パスワードをプレーンテキストで保存(効果の程は不明)
+- ログ無効化
+- UNIX domain socket
 
 ### nginx
 
@@ -16,6 +18,7 @@ ISUCON7 qualify repo: 人は何故生きるのか
 - 静的ファイルを配信
   - ETag
   - Cache-Control
+- ログ無効化
 
 ### MySQL
 
